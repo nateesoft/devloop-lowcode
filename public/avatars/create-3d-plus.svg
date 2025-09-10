@@ -1,0 +1,64 @@
+<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main Circle with Gradient -->
+  <circle cx="30" cy="30" r="30" fill="url(#createGradient)"/>
+  
+  <!-- 3D Shadow Effect -->
+  <circle cx="30" cy="32" r="28" fill="url(#shadowGradient)" opacity="0.3"/>
+  
+  <!-- Inner Highlight Circle -->
+  <circle cx="30" cy="30" r="26" fill="url(#highlightGradient)" opacity="0.4"/>
+  
+  <!-- Main Plus Sign with 3D Effect -->
+  <!-- Vertical Bar Shadow -->
+  <rect x="26" y="12" width="8" height="36" rx="4" fill="url(#plusShadow)" opacity="0.4"/>
+  <!-- Horizontal Bar Shadow -->
+  <rect x="12" y="26" width="36" height="8" rx="4" fill="url(#plusShadow)" opacity="0.4"/>
+  
+  <!-- Vertical Bar -->
+  <rect x="25" y="10" width="10" height="40" rx="5" fill="white"/>
+  <!-- Horizontal Bar -->
+  <rect x="10" y="25" width="40" height="10" rx="5" fill="white"/>
+  
+  <!-- 3D Highlight on Plus -->
+  <rect x="25" y="10" width="10" height="20" rx="5" fill="url(#plusHighlight)" opacity="0.6"/>
+  <rect x="10" y="25" width="20" height="10" rx="5" fill="url(#plusHighlight)" opacity="0.6"/>
+  
+  <!-- Outer Ring Effect -->
+  <circle cx="30" cy="30" r="29" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+  
+  <defs>
+    <!-- Main Gradient -->
+    <linearGradient id="createGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ee5a52;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c44569;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Shadow Gradient -->
+    <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <!-- Highlight Gradient -->
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Plus Shadow -->
+    <linearGradient id="plusShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <!-- Plus Highlight -->
+    <linearGradient id="plusHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Subtle Glow Effect -->
+  <circle cx="30" cy="30" r="30" fill="none" stroke="url(#createGradient)" stroke-width="1" opacity="0.5"/>
+</svg>
