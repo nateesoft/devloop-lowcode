@@ -28,6 +28,7 @@ export function TikTokLayout() {
   const [activeFooterTab, setActiveFooterTab] = useState('home')
   const [showArchitectDetails, setShowArchitectDetails] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
+  const [showFullscreenModal, setShowFullscreenModal] = useState(false)
   // Removed touch horizontal tracking since we're using arrow buttons now
   const [dragStart, setDragStart] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -81,7 +82,7 @@ export function TikTokLayout() {
     setDragOffset(0)
   }
 
-  const isModalOpen = showArchitectDetails || showCategoryGrid
+  const isModalOpen = showArchitectDetails || showCategoryGrid || showFullscreenModal
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isModalOpen) return // Prevent interaction when modal is open
@@ -299,6 +300,42 @@ export function TikTokLayout() {
           })}
         </div>
       </div>
+
+      {/* Green Play Button - On Content */}
+      {!isModalOpen && (
+        <div className="absolute top-12 bottom-20 left-4 right-20">
+          <div className="relative w-full h-full">
+            <button
+              onClick={() => setShowFullscreenModal(true)}
+              className="absolute top-6 right-6 z-[110] p-4 transition-all duration-300 hover:scale-125 active:scale-110"
+            >
+              {/* Green Play Icon */}
+              <svg 
+                width="32" 
+                height="32" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300"
+                style={{
+                  filter: 'drop-shadow(0 4px 16px rgba(34, 197, 94, 0.5))'
+                }}
+              >
+                {/* Green Play Icon with gradient */}
+                <defs>
+                  <linearGradient id="playGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#16a34a" />
+                  </linearGradient>
+                </defs>
+                {/* Play triangle with background circle */}
+                <circle cx="12" cy="12" r="11" stroke="url(#playGradient)" strokeWidth="2" fill="rgba(34, 197, 94, 0.1)"/>
+                <path d="M10 8v8l6-4z" fill="url(#playGradient)"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Left Button for Website Architecture */}
       {!isModalOpen && (
@@ -707,6 +744,105 @@ export function TikTokLayout() {
           ))}
         </div>
       </div>
+
+      {/* Fullscreen Modal */}
+      <AnimatePresence>
+        {showFullscreenModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowFullscreenModal(false)}
+              className="absolute top-6 right-6 z-[210] bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Fullscreen Content */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full h-full max-w-7xl mx-auto p-8 flex flex-col"
+            >
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-4">{currentTemplate.title}</h1>
+                <p className="text-xl text-white/80 mb-6">{currentTemplate.description}</p>
+                <div className="flex justify-center space-x-4">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.category}
+                  </span>
+                  <span className="bg-white/20 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.likes} likes
+                  </span>
+                  <span className="bg-white/20 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.comments} comments
+                  </span>
+                </div>
+              </div>
+
+              {/* Interactive Content Area */}
+              <div className="flex-1 bg-white rounded-2xl overflow-hidden shadow-2xl">
+                {currentTemplate.htmlContent ? (
+                  <iframe
+                    srcDoc={currentTemplate.htmlContent}
+                    className="w-full h-full border-none"
+                    title={currentTemplate.title}
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-col p-12">
+                    <div className="text-8xl mb-8">📱</div>
+                    <div className="text-4xl font-bold text-slate-800 mb-6 text-center">{currentTemplate.title}</div>
+                    <div className="text-xl text-slate-600 text-center mb-8 max-w-3xl">{currentTemplate.description}</div>
+                    
+                    {/* Tech Stack Display - Larger for fullscreen */}
+                    <div className="grid grid-cols-2 gap-6 mb-8 max-w-2xl">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Frontend</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.frontend}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Backend</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.backend}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Database</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.database}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Hosting</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.hosting}</div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-4">
+                      <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        🚀 Deploy Now
+                      </button>
+                      <button className="bg-white/80 backdrop-blur-sm text-slate-800 px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        🔧 Customize
+                      </button>
+                      <button className="bg-white/80 backdrop-blur-sm text-slate-800 px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        💾 Save Template
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       </div>
     </>
