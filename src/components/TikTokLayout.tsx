@@ -148,6 +148,24 @@ export function TikTokLayout() {
           .header-menu-scroll::-webkit-scrollbar {
             display: none;
           }
+          .modal-content-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.3) transparent;
+          }
+          .modal-content-scroll::-webkit-scrollbar {
+            width: 8px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.5);
+          }
         `}
       </style>
       <div 
@@ -752,8 +770,9 @@ export function TikTokLayout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
+            className="fixed inset-0 z-[200] bg-black overflow-auto"
           >
+            <div className="min-h-full flex items-center justify-center p-4">
             {/* Close Button */}
             <button 
               onClick={() => setShowFullscreenModal(false)}
@@ -770,7 +789,7 @@ export function TikTokLayout() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full h-full max-w-7xl mx-auto p-8 flex flex-col"
+              className="w-full h-full max-w-7xl mx-auto p-8 flex flex-col overflow-hidden"
             >
               {/* Header */}
               <div className="text-center mb-8">
@@ -790,14 +809,20 @@ export function TikTokLayout() {
               </div>
 
               {/* Interactive Content Area */}
-              <div className="flex-1 bg-white rounded-2xl overflow-hidden shadow-2xl">
+              <div className="flex-1 bg-white rounded-2xl overflow-auto shadow-2xl modal-content-scroll">
                 {currentTemplate.htmlContent ? (
-                  <iframe
-                    srcDoc={currentTemplate.htmlContent}
-                    className="w-full h-full border-none"
-                    title={currentTemplate.title}
-                    sandbox="allow-scripts allow-same-origin"
-                  />
+                  <div className="w-full h-full relative">
+                    <iframe
+                      srcDoc={currentTemplate.htmlContent}
+                      className="w-full h-full border-none"
+                      title={currentTemplate.title}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                      style={{
+                        minHeight: '100%',
+                        overflow: 'auto'
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-col p-12">
                     <div className="text-8xl mb-8">📱</div>
@@ -840,6 +865,7 @@ export function TikTokLayout() {
                 )}
               </div>
             </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
