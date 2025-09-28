@@ -28,8 +28,8 @@ export function TikTokLayout() {
   const [activeFooterTab, setActiveFooterTab] = useState('home')
   const [showArchitectDetails, setShowArchitectDetails] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
-  const [touchStart, setTouchStart] = useState(0)
-  const [touchEnd, setTouchEnd] = useState(0)
+  const [showFullscreenModal, setShowFullscreenModal] = useState(false)
+  // Removed touch horizontal tracking since we're using arrow buttons now
   const [dragStart, setDragStart] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
@@ -48,41 +48,27 @@ export function TikTokLayout() {
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isModalOpen) return // Prevent interaction when modal is open
     const touch = e.targetTouches[0]
-    setTouchStart(touch.clientX)
     setDragStart(touch.clientY)
     setIsDragging(true)
     setDragOffset(0)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (isModalOpen) return // Prevent interaction when modal is open
     const touch = e.targetTouches[0]
-    setTouchEnd(touch.clientX)
     const offsetY = touch.clientY - dragStart
     setDragOffset(offsetY)
   }
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
+    if (isModalOpen) return // Prevent interaction when modal is open
     
-    // Horizontal swipe for sidebars
-    const horizontalDistance = touchStart - touchEnd
-    const isLeftSwipe = horizontalDistance > 50
-    const isRightSwipe = horizontalDistance < -50
-    
-    // Vertical drag for template navigation
+    // Vertical drag for template navigation only
     const threshold = 50
-    const isUpDrag = dragOffset < -threshold // ลากขึ้น = next
-    const isDownDrag = dragOffset > threshold // ลากลง = previous
-
-    if (isRightSwipe) {
-      setShowArchitectDetails(true)
-      setShowCategoryGrid(false)
-    }
-    if (isLeftSwipe) {
-      setShowCategoryGrid(true)
-      setShowArchitectDetails(false)
-    }
+    const isUpDrag = dragOffset < -threshold
+    const isDownDrag = dragOffset > threshold
     
     // Handle vertical drag for template navigation
     if (isUpDrag) {
@@ -96,26 +82,29 @@ export function TikTokLayout() {
     setDragOffset(0)
   }
 
+  const isModalOpen = showArchitectDetails || showCategoryGrid || showFullscreenModal
+
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isModalOpen) return // Prevent interaction when modal is open
     setDragStart(e.clientY)
     setIsDragging(true)
     setDragOffset(0)
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return
+    if (!isDragging || isModalOpen) return // Prevent interaction when modal is open
     const currentY = e.clientY
     const offsetY = currentY - dragStart
     setDragOffset(offsetY)
   }
 
   const handleMouseUp = () => {
-    if (!isDragging) return
+    if (!isDragging || isModalOpen) return // Prevent interaction when modal is open
     setIsDragging(false)
     
-    const threshold = 50 // ลดจาก 100 เป็น 50 เพื่อให้ sensitive มากขึ้น
-    const isUpDrag = dragOffset < -threshold // ลากขึ้น = next
-    const isDownDrag = dragOffset > threshold // ลากลง = previous
+    const threshold = 50
+    const isUpDrag = dragOffset < -threshold
+    const isDownDrag = dragOffset > threshold
     
     if (isUpDrag) {
       setCurrentIndex(prevIndex => (prevIndex + 1) % websiteTemplates.length)
@@ -123,7 +112,6 @@ export function TikTokLayout() {
       setCurrentIndex(prevIndex => prevIndex === 0 ? websiteTemplates.length - 1 : prevIndex - 1)
     }
     
-    // Reset drag offset
     setDragOffset(0)
   }
 
@@ -154,9 +142,37 @@ export function TikTokLayout() {
   }, [])
 
   return (
-    <div 
-      ref={containerRef}
-      className="relative h-screen w-full bg-black overflow-hidden cursor-grab active:cursor-grabbing select-none"
+    <>
+      <style>
+        {`
+          .header-menu-scroll::-webkit-scrollbar {
+            display: none;
+          }
+          .modal-content-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.3) transparent;
+          }
+          .modal-content-scroll::-webkit-scrollbar {
+            width: 8px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+          }
+          .modal-content-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.5);
+          }
+        `}
+      </style>
+      <div 
+        ref={containerRef}
+        className={`relative h-screen w-full bg-black overflow-hidden select-none ${
+          isModalOpen ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
+        }`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -164,179 +180,266 @@ export function TikTokLayout() {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      style={{
+        // Don't disable pointer events as it would break modal interactions
+        userSelect: 'none'
+      }}
     >
       {/* Header Menu */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
-        <div className="flex items-center justify-center px-4 py-2 space-x-6">
-          {headerTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveHeaderTab(tab.id)}
-              className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-all ${
-                activeHeaderTab === tab.id 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              {tab.icon && (
-                typeof tab.icon === 'string' ? (
-                  <span>{tab.icon}</span>
-                ) : (
-                  <tab.icon size={16} />
-                )
-              )}
-              <span className="text-sm font-medium">{tab.label}</span>
-            </button>
-          ))}
+        <div 
+          className="flex items-center px-4 py-2 overflow-x-auto header-menu-scroll"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          <div className="flex items-center space-x-4 min-w-max">
+            {headerTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveHeaderTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${
+                  activeHeaderTab === tab.id 
+                    ? 'bg-white text-black shadow-md' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {tab.icon && (
+                  typeof tab.icon === 'string' ? (
+                    <span className="text-base">{tab.icon}</span>
+                  ) : (
+                    <tab.icon size={18} />
+                  )
+                )}
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Content Area - Full space between menu bars */}
-      <div className="absolute top-12 bottom-20 left-4 right-20">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTemplate.id}
-            initial={{ opacity: 0, y: '100%' }}
-            animate={{ 
-              opacity: 1,
-              y: isDragging ? dragOffset * 0.3 : 0,
-              scale: isDragging ? Math.max(0.95, 1 - Math.abs(dragOffset) * 0.0005) : 1
-            }}
-            exit={{ 
-              opacity: 0, 
-              y: dragOffset > 0 ? '100%' : '-100%'
-            }}
-            transition={{ 
-              duration: isDragging ? 0 : 0.5,
-              ease: isDragging ? [0.25, 0.46, 0.45, 0.94] : [0.22, 1, 0.36, 1],
-              type: 'tween'
-            }}
-            className="w-full h-full relative"
+      {/* Main Content Area - Stack Card Layout */}
+      <div className={`absolute top-12 bottom-20 left-4 right-20 perspective-1000 ${
+        isModalOpen ? 'pointer-events-none' : 'pointer-events-auto'
+      }`}>
+        <div className="relative w-full h-full">
+          {/* Stack of 3 cards - Background cards (static) */}
+          {[2, 1, 0].map((offset, stackIndex) => {
+            const templateIndex = (currentIndex + offset) % websiteTemplates.length;
+            const template = websiteTemplates[templateIndex];
+            const isTopCard = offset === 0;
+            
+            return (
+              <motion.div
+                key={`stack-${templateIndex}-${offset}`}
+                className="absolute inset-0"
+                style={{
+                  zIndex: 50 - offset,
+                }}
+                animate={{
+                  scale: isTopCard ? (isDragging ? Math.max(0.95, 1 - Math.abs(dragOffset) * 0.0005) : 1) : 0.95 - (offset * 0.02),
+                  y: isTopCard ? (isDragging ? dragOffset * 0.3 : 0) : offset * 8,
+                  x: isTopCard ? 0 : offset * 2,
+                  rotateY: isTopCard ? (isDragging ? dragOffset * 0.05 : 0) : offset * 2,
+                  rotateX: isTopCard ? (isDragging ? -dragOffset * 0.02 : 0) : 0,
+                  opacity: isTopCard ? 1 : (1 - offset * 0.15)
+                }}
+                transition={{
+                  duration: isDragging ? 0 : 0.3,
+                  ease: 'easeOut'
+                }}
+              >
+                <div 
+                  className={`relative h-full w-full bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden shadow-2xl ${
+                    isTopCard && !isModalOpen ? 'cursor-grab active:cursor-grabbing' : ''
+                  }`}
+                  style={{
+                    filter: isTopCard 
+                      ? (isDragging ? `brightness(${Math.max(0.8, 1 - Math.abs(dragOffset) * 0.001)})` : 'brightness(1)')
+                      : `brightness(${0.7 - offset * 0.1})`,
+                    boxShadow: isTopCard 
+                      ? (isDragging ? `0 ${Math.abs(dragOffset) * 0.02}px ${Math.abs(dragOffset) * 0.04}px rgba(0,0,0,0.3)` : '0 8px 25px rgba(0,0,0,0.2)')
+                      : `0 ${4 + offset * 2}px ${12 + offset * 4}px rgba(0,0,0,${0.3 + offset * 0.1})`,
+                    transformStyle: 'preserve-3d'
+                  }}
+                >
+                  {/* Card Content */}
+                  <div className="w-full h-full">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 overflow-hidden rounded-lg flex items-center justify-center flex-col p-8">
+                      <div className="text-8xl mb-6">📱</div>
+                      <div className="text-3xl font-bold text-slate-800 mb-4 text-center">{template.title}</div>
+                      <div className="text-lg text-slate-600 text-center mb-6 max-w-2xl">{template.description}</div>
+                      
+                      {/* Tech Stack Display */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
+                          <div className="text-sm text-slate-500 mb-1">Frontend</div>
+                          <div className="font-semibold text-slate-800">{template.tech.frontend}</div>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
+                          <div className="text-sm text-slate-500 mb-1">Backend</div>
+                          <div className="font-semibold text-slate-800">{template.tech.backend}</div>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
+                          <div className="text-sm text-slate-500 mb-1">Database</div>
+                          <div className="font-semibold text-slate-800">{template.tech.database}</div>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
+                          <div className="text-sm text-slate-500 mb-1">Hosting</div>
+                          <div className="font-semibold text-slate-800">{template.tech.hosting}</div>
+                        </div>
+                      </div>
+
+                      {/* Category Badge */}
+                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full font-medium">
+                        {template.category}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Template Description Overlay (only for top card) */}
+                  {isTopCard && (
+                    <div className="absolute bottom-4 left-4 right-4 text-white z-10 bg-black/40 backdrop-blur-sm rounded-lg p-4">
+                      <h2 className="text-lg font-bold mb-2">{template.title}</h2>
+                      <p className="text-sm text-white/80 mb-2">{template.description}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {template.tags.map((tag) => (
+                          <span key={tag} className="bg-white/20 px-2 py-1 rounded text-xs">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Green Play Button - On Content */}
+      {!isModalOpen && (
+        <div className="absolute top-12 bottom-20 left-4 right-20">
+          <div className="relative w-full h-full">
+            <button
+              onClick={() => setShowFullscreenModal(true)}
+              className="absolute top-6 right-6 z-[110] p-4 transition-all duration-300 hover:scale-125 active:scale-110"
+            >
+              {/* Green Play Icon */}
+              <svg 
+                width="32" 
+                height="32" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300"
+                style={{
+                  filter: 'drop-shadow(0 4px 16px rgba(34, 197, 94, 0.5))'
+                }}
+              >
+                {/* Green Play Icon with gradient */}
+                <defs>
+                  <linearGradient id="playGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#16a34a" />
+                  </linearGradient>
+                </defs>
+                {/* Play triangle with background circle */}
+                <circle cx="12" cy="12" r="11" stroke="url(#playGradient)" strokeWidth="2" fill="rgba(34, 197, 94, 0.1)"/>
+                <path d="M10 8v8l6-4z" fill="url(#playGradient)"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Left Button for Website Architecture */}
+      {!isModalOpen && (
+        <button
+          onClick={() => {
+            setShowArchitectDetails(true)
+            setShowCategoryGrid(false)
+          }}
+          className="absolute left-6 top-1/2 -translate-y-1/2 z-[100] p-3 transition-all duration-300 hover:scale-125 active:scale-110"
+        >
+          {/* Stack Icon - Server Stack Style */}
+          <svg 
+            width="28" 
+            height="28" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="transition-all duration-300"
             style={{
-              filter: isDragging 
-                ? `brightness(${Math.max(0.7, 1 - Math.abs(dragOffset) * 0.001)})` 
-                : 'brightness(1)',
-              boxShadow: isDragging 
-                ? `0 ${Math.abs(dragOffset) * 0.02}px ${Math.abs(dragOffset) * 0.04}px rgba(0,0,0,0.2)`
-                : '0 4px 12px rgba(0,0,0,0.1)'
+              filter: 'drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3))'
             }}
           >
-            {/* Drawer Preview for Next Template */}
-            {isDragging && dragOffset < -50 && (
-              <motion.div
-                initial={{ opacity: 0, y: '-100%' }}
-                animate={{ 
-                  opacity: Math.min(1, Math.abs(dragOffset + 50) / 100),
-                  y: `${Math.max(-100, -100 + (Math.abs(dragOffset) - 50) * 0.5)}%`
-                }}
-                className="absolute inset-0 z-10 bg-gradient-to-br from-gray-800 to-black rounded-lg overflow-hidden"
-                style={{
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-                }}
-              >
-                <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-col p-8">
-                  <div className="text-6xl mb-4">📱</div>
-                  <div className="text-2xl font-bold text-white mb-2">
-                    {websiteTemplates[(currentIndex + 1) % websiteTemplates.length]?.title || 'Next Template'}
-                  </div>
-                  <div className="text-sm text-white/70 text-center">
-                    {websiteTemplates[(currentIndex + 1) % websiteTemplates.length]?.category || 'Loading...'}
-                  </div>
-                  <div className="mt-4 bg-white/20 px-4 py-2 rounded-full text-xs text-white">
-                    ↑ Release to continue
-                  </div>
-                </div>
-              </motion.div>
-            )}
+            {/* Server Stack Icon with gradient */}
+            <defs>
+              <linearGradient id="stackGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#60a5fa" />
+                <stop offset="100%" stopColor="#3b82f6" />
+              </linearGradient>
+            </defs>
             
-            {/* Drawer Preview for Previous Template */}
-            {isDragging && dragOffset > 50 && (
-              <motion.div
-                initial={{ opacity: 0, y: '100%' }}
-                animate={{ 
-                  opacity: Math.min(1, Math.abs(dragOffset - 50) / 100),
-                  y: `${Math.min(100, 100 - (Math.abs(dragOffset) - 50) * 0.5)}%`
-                }}
-                className="absolute inset-0 z-10 bg-gradient-to-br from-gray-800 to-black rounded-lg overflow-hidden"
-                style={{
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-                }}
-              >
-                <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center flex-col p-8">
-                  <div className="text-6xl mb-4">📱</div>
-                  <div className="text-2xl font-bold text-white mb-2">
-                    {websiteTemplates[currentIndex === 0 ? websiteTemplates.length - 1 : currentIndex - 1]?.title || 'Previous Template'}
-                  </div>
-                  <div className="text-sm text-white/70 text-center">
-                    {websiteTemplates[currentIndex === 0 ? websiteTemplates.length - 1 : currentIndex - 1]?.category || 'Loading...'}
-                  </div>
-                  <div className="mt-4 bg-white/20 px-4 py-2 rounded-full text-xs text-white">
-                    ↓ Release to continue
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            {/* Template Preview - Full Available Space */}
-            <div className={`relative h-full w-full bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden shadow-2xl transition-transform duration-75 ${
-              isDragging && Math.abs(dragOffset) > 30 
-                ? 'transform-gpu' 
-                : ''
-            }`}
+            {/* Bottom Server */}
+            <rect x="4" y="17" width="16" height="4" rx="1" stroke="url(#stackGradient)" strokeWidth="2" fill="rgba(96, 165, 250, 0.1)"/>
+            <circle cx="7" cy="19" r="0.8" fill="url(#stackGradient)"/>
+            <circle cx="9.5" cy="19" r="0.8" fill="url(#stackGradient)"/>
+            <rect x="12" y="18.5" width="6" height="1" rx="0.5" stroke="url(#stackGradient)" strokeWidth="1" fill="none"/>
+            
+            {/* Middle Server */}
+            <rect x="4" y="11" width="16" height="4" rx="1" stroke="url(#stackGradient)" strokeWidth="2" fill="rgba(96, 165, 250, 0.15)"/>
+            <circle cx="7" cy="13" r="0.8" fill="url(#stackGradient)"/>
+            <circle cx="9.5" cy="13" r="0.8" fill="url(#stackGradient)"/>
+            <rect x="12" y="12.5" width="6" height="1" rx="0.5" stroke="url(#stackGradient)" strokeWidth="1" fill="none"/>
+            
+            {/* Top Server */}
+            <rect x="4" y="5" width="16" height="4" rx="1" stroke="url(#stackGradient)" strokeWidth="2" fill="rgba(96, 165, 250, 0.2)"/>
+            <circle cx="7" cy="7" r="0.8" fill="url(#stackGradient)"/>
+            <circle cx="9.5" cy="7" r="0.8" fill="url(#stackGradient)"/>
+            <rect x="12" y="6.5" width="6" height="1" rx="0.5" stroke="url(#stackGradient)" strokeWidth="1" fill="none"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Right Button for Categories */}
+      {!isModalOpen && (
+        <button
+          onClick={() => {
+            setShowCategoryGrid(true)
+            setShowArchitectDetails(false)
+          }}
+          className="absolute right-28 top-1/2 -translate-y-1/2 z-[100] p-3 transition-all duration-300 hover:scale-125 active:scale-110"
+        >
+          {/* Category Grid Icon */}
+          <svg 
+            width="28" 
+            height="28" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="transition-all duration-300"
             style={{
-              transform: isDragging && Math.abs(dragOffset) > 30 
-                ? `translateY(${dragOffset * 0.1}px) rotateX(${dragOffset * -0.02}deg)` 
-                : 'none',
-              transformStyle: 'preserve-3d'
-            }}>
-              <div className="w-full h-full">
-                <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 overflow-hidden rounded-lg flex items-center justify-center flex-col p-8">
-                  <div className="text-8xl mb-6">📱</div>
-                  <div className="text-3xl font-bold text-slate-800 mb-4 text-center">{currentTemplate.title}</div>
-                  <div className="text-lg text-slate-600 text-center mb-6 max-w-2xl">{currentTemplate.description}</div>
-                  
-                  {/* Tech Stack Display */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
-                      <div className="text-sm text-slate-500 mb-1">Frontend</div>
-                      <div className="font-semibold text-slate-800">{currentTemplate.tech.frontend}</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
-                      <div className="text-sm text-slate-500 mb-1">Backend</div>
-                      <div className="font-semibold text-slate-800">{currentTemplate.tech.backend}</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
-                      <div className="text-sm text-slate-500 mb-1">Database</div>
-                      <div className="font-semibold text-slate-800">{currentTemplate.tech.database}</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-center">
-                      <div className="text-sm text-slate-500 mb-1">Hosting</div>
-                      <div className="font-semibold text-slate-800">{currentTemplate.tech.hosting}</div>
-                    </div>
-                  </div>
-
-                  {/* Category Badge */}
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full font-medium">
-                    {currentTemplate.category}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Template Description - Positioned over content */}
-            <div className="absolute bottom-4 left-4 right-4 text-white z-10 bg-black/40 backdrop-blur-sm rounded-lg p-4">
-              <h2 className="text-lg font-bold mb-2">{currentTemplate.title}</h2>
-              <p className="text-sm text-white/80 mb-2">{currentTemplate.description}</p>
-              <div className="flex flex-wrap gap-1">
-                {currentTemplate.tags.map((tag) => (
-                  <span key={tag} className="bg-white/20 px-2 py-1 rounded text-xs">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+              filter: 'drop-shadow(0 4px 12px rgba(168, 85, 247, 0.3))'
+            }}
+          >
+            {/* Grid/Category Icon with gradient */}
+            <defs>
+              <linearGradient id="categoryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#8b5cf6" />
+              </linearGradient>
+            </defs>
+            <rect x="3" y="3" width="7" height="7" rx="2" stroke="url(#categoryGradient)" strokeWidth="2.5" fill="none"/>
+            <rect x="14" y="3" width="7" height="7" rx="2" stroke="url(#categoryGradient)" strokeWidth="2.5" fill="none"/>
+            <rect x="14" y="14" width="7" height="7" rx="2" stroke="url(#categoryGradient)" strokeWidth="2.5" fill="none"/>
+            <rect x="3" y="14" width="7" height="7" rx="2" stroke="url(#categoryGradient)" strokeWidth="2.5" fill="none"/>
+          </svg>
+        </button>
+      )}
 
       {/* Right Sidebar */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center space-y-6">
@@ -405,7 +508,7 @@ export function TikTokLayout() {
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            className="absolute left-0 top-0 bottom-0 w-96 bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm z-50 p-6 text-white overflow-y-auto"
+            className="absolute left-0 top-0 bottom-0 w-96 bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm z-50 p-6 text-white overflow-y-auto pointer-events-auto"
           >
             <button 
               onClick={() => setShowArchitectDetails(false)}
@@ -498,7 +601,7 @@ export function TikTokLayout() {
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-bl from-gray-900/95 to-black/95 backdrop-blur-sm z-50 p-6 text-white overflow-y-auto"
+            className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-bl from-gray-900/95 to-black/95 backdrop-blur-sm z-50 p-6 text-white overflow-y-auto pointer-events-auto"
           >
             <button 
               onClick={() => setShowCategoryGrid(false)}
@@ -660,6 +763,114 @@ export function TikTokLayout() {
         </div>
       </div>
 
-    </div>
+      {/* Fullscreen Modal */}
+      <AnimatePresence>
+        {showFullscreenModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black overflow-auto"
+          >
+            <div className="min-h-full flex items-center justify-center p-4">
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowFullscreenModal(false)}
+              className="absolute top-6 right-6 z-[210] bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Fullscreen Content */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full h-full max-w-7xl mx-auto p-8 flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-4">{currentTemplate.title}</h1>
+                <p className="text-xl text-white/80 mb-6">{currentTemplate.description}</p>
+                <div className="flex justify-center space-x-4">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.category}
+                  </span>
+                  <span className="bg-white/20 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.likes} likes
+                  </span>
+                  <span className="bg-white/20 text-white px-4 py-2 rounded-full font-medium">
+                    {currentTemplate.comments} comments
+                  </span>
+                </div>
+              </div>
+
+              {/* Interactive Content Area */}
+              <div className="flex-1 bg-white rounded-2xl overflow-auto shadow-2xl modal-content-scroll">
+                {currentTemplate.htmlContent ? (
+                  <div className="w-full h-full relative">
+                    <iframe
+                      srcDoc={currentTemplate.htmlContent}
+                      className="w-full h-full border-none"
+                      title={currentTemplate.title}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                      style={{
+                        minHeight: '100%',
+                        overflow: 'auto'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-col p-12">
+                    <div className="text-8xl mb-8">📱</div>
+                    <div className="text-4xl font-bold text-slate-800 mb-6 text-center">{currentTemplate.title}</div>
+                    <div className="text-xl text-slate-600 text-center mb-8 max-w-3xl">{currentTemplate.description}</div>
+                    
+                    {/* Tech Stack Display - Larger for fullscreen */}
+                    <div className="grid grid-cols-2 gap-6 mb-8 max-w-2xl">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Frontend</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.frontend}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Backend</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.backend}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Database</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.database}</div>
+                      </div>
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <div className="text-lg text-slate-500 mb-2">Hosting</div>
+                        <div className="text-2xl font-bold text-slate-800">{currentTemplate.tech.hosting}</div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-4">
+                      <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        🚀 Deploy Now
+                      </button>
+                      <button className="bg-white/80 backdrop-blur-sm text-slate-800 px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        🔧 Customize
+                      </button>
+                      <button className="bg-white/80 backdrop-blur-sm text-slate-800 px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                        💾 Save Template
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      </div>
+    </>
   )
 }
